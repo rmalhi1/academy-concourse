@@ -52,6 +52,6 @@ jobs:
             - |-
               trivy image --input ./image.tar --exit-code 0 --severity UNKNOWN,LOW,MEDIUM --light
               trivy image --input ./image.tar --exit-code 1 --severity HIGH,CRITICAL --light
-    - put: test-image
+    - put: concourse-academy
       params:
         image: image/image.tar
