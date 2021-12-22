@@ -4,11 +4,17 @@ resources:
   type: git
   check_every: 1m
   source:
-    uri: https://github.com/jprelph/concourse-demos.git
+    uri: https://github.com/rmalhi1/academy-concourse.git
     branch: main
-
+- name: concourse-academy
+  type: registry-image
+  source:
+    repository: rmalhi/concourse-academy
+    tag: latest
+    username: rmalhi
+    password: ((docker_password))
 jobs:
-- name: createimage
+- name: create-image
   plan:
     - get: src
       trigger: true
@@ -24,5 +30,28 @@ jobs:
           DOCKERFILE: src/Dockerfile
         inputs:
         - name: src
+        outputs:
+        - name: image
         run:
           path: build
+    - task: scan
+      privileged: true
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: aquasec/trivy
+        inputs:
+        - name: image
+          path: .
+        run:
+          path: sh
+          args: 
+            - -ec
+            - |-
+              trivy image --input ./image.tar --exit-code 0 --severity UNKNOWN,LOW,MEDIUM --light
+              trivy image --input ./image.tar --exit-code 1 --severity HIGH,CRITICAL --light
+    - put: test-image
+      params:
+        image: image/image.tar
